@@ -675,7 +675,7 @@ export default function UsuarioDetallePage() {
                     field="certificado_bancario"
                     value={requisitos.certificado_bancario}
                   />
-                  <ReqItem label="RUC" field="ruc" value={requisitos.ruc} />
+                  <ReqItem label="RUC" field="ruc" value={requisitos.ruc} />    
 
                       {/* ✅ NUEVO */}
                       <ReqItem

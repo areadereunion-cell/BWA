@@ -6,7 +6,7 @@ interface LeadCardProps {
     id?: number;
     nombre?: string;
     telefono?: string;
-    estado?: "Nuevo" | "Contactado" | "En Proceso" | "Cerrado" | "Venta" ;
+    estado?: "Nuevo" | "Contactado" | "En Proceso" | "Cerrado";
     correo?: string;
     empresa?: string;
     [key: string]: any;
@@ -62,7 +62,7 @@ export default function LeadCard({ lead }: LeadCardProps) {
             Detalles
           </button>
         </div>
-
+            
       </div>
     </div>
   );

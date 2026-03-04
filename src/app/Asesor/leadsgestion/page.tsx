@@ -22,6 +22,9 @@ interface Lead {
   meses_inversion?: number;
   monto_inversion?: number;
 
+  // ✅ fecha del lead (YYYY-MM-DD)
+  fecha_lead?: string | null;
+
   // ✅ si en tu API viene alguna fecha
   fecha?: string | null;
   created_at?: string | null;
@@ -60,10 +63,22 @@ function safeEstado(v: any): EstadoLead | undefined {
   if (!s) return undefined;
 
   if (s === "nuevo" || s.includes("nuevo")) return "Nuevo";
-  if (s === "contactado" || s === "contactada" || s.includes("contact")) return "Contactado";
-  if (s === "en proceso" || s.includes("proceso") || s.includes("seguimiento") || s.includes("negoci"))
+  if (s === "contactado" || s === "contactada" || s.includes("contact"))
+    return "Contactado";
+  if (
+    s === "en proceso" ||
+    s.includes("proceso") ||
+    s.includes("seguimiento") ||
+    s.includes("negoci")
+  )
     return "En Proceso";
-  if (s === "cerrado" || s === "cerrada" || s.includes("cerrad") || s.includes("closed") || s.includes("won"))
+  if (
+    s === "cerrado" ||
+    s === "cerrada" ||
+    s.includes("cerrad") ||
+    s.includes("closed") ||
+    s.includes("won")
+  )
     return "Cerrado";
 
   return undefined;
@@ -85,13 +100,26 @@ function norm(v: any) {
 function categoriaEstado(estadoRaw: any): Cat {
   const s = norm(estadoRaw);
 
-  if (s.includes("cerr") || s.includes("closed") || s.includes("won") || s.includes("finaliz") || s.includes("complet"))
+  if (
+    s.includes("cerr") ||
+    s.includes("closed") ||
+    s.includes("won") ||
+    s.includes("finaliz") ||
+    s.includes("complet")
+  )
     return "cerrado";
 
-  if (s.includes("contact") || s.includes("llamad") || s.includes("respond") || s.includes("respuesta") || s.includes("interes"))
+  if (
+    s.includes("contact") ||
+    s.includes("llamad") ||
+    s.includes("respond") ||
+    s.includes("respuesta") ||
+    s.includes("interes")
+  )
     return "contactado";
 
-  if (s.includes("proceso") || s.includes("seguimiento") || s.includes("negoci")) return "en_proceso";
+  if (s.includes("proceso") || s.includes("seguimiento") || s.includes("negoci"))
+    return "en_proceso";
   if (s.includes("nuevo")) return "nuevo";
 
   return "otro";
@@ -99,7 +127,15 @@ function categoriaEstado(estadoRaw: any): Cat {
 
 // ✅ toma fecha desde el primer campo disponible
 function getLeadDateRaw(l: any) {
-  return l?.fecha ?? l?.created_at ?? l?.createdAt ?? l?.fecha_creacion ?? l?.fechaCreacion ?? null;
+  return (
+    l?.fecha_lead ??
+    l?.fecha ??
+    l?.created_at ??
+    l?.createdAt ??
+    l?.fecha_creacion ??
+    l?.fechaCreacion ??
+    null
+  );
 }
 
 // ✅ convertir a YYYY-MM-DD (sin UTC)
@@ -112,6 +148,15 @@ function toYMD(v: any) {
   const d = new Date(s);
   if (Number.isNaN(d.getTime())) return "";
 
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// ✅ HOY en YYYY-MM-DD (local, sin UTC)
+function todayYMD() {
+  const d = new Date();
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
@@ -225,6 +270,8 @@ export default function LeadsGestion() {
     setError(null);
 
     try {
+      const fecha_lead = todayYMD(); // ✅ NUEVO
+
       const res = await fetch("/api/leads/asesor", {
         method: "POST",
         credentials: "include",
@@ -239,6 +286,8 @@ export default function LeadsGestion() {
           pais: String(form.pais || "").trim(),
           meses_inversion: Number(form.meses_inversion) || 0,
           monto_inversion: Number(form.monto_inversion) || 0,
+
+          fecha_lead, // ✅ SE ENVÍA AL BACKEND
         }),
       });
 
@@ -300,8 +349,12 @@ export default function LeadsGestion() {
               <div className="p-6 border-b border-white/10 bg-black/25">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
-                    <h1 className="text-3xl font-bold text-white">Gestión de Leads del Asesor</h1>
-                    <p className="text-sm text-white/60 mt-1">Filtra por estado y crea leads nuevos.</p>
+                    <h1 className="text-3xl font-bold text-white">
+                      Gestión de Leads del Asesor
+                    </h1>
+                    <p className="text-sm text-white/60 mt-1">
+                      Filtra por estado y crea leads nuevos.
+                    </p>
                   </div>
 
                   <button
@@ -321,21 +374,36 @@ export default function LeadsGestion() {
 
                 {/* ESTADO */}
                 <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <FilterBtn active={filtroEstado === "todos"} onClick={() => setFiltroEstado("todos")}>
+                  <FilterBtn
+                    active={filtroEstado === "todos"}
+                    onClick={() => setFiltroEstado("todos")}
+                  >
                     Todos
                   </FilterBtn>
-                  <FilterBtn active={filtroEstado === "pendiente"} onClick={() => setFiltroEstado("pendiente")}>
+                  <FilterBtn
+                    active={filtroEstado === "pendiente"}
+                    onClick={() => setFiltroEstado("pendiente")}
+                  >
                     Pendientes
                   </FilterBtn>
-                  <FilterBtn active={filtroEstado === "contactado"} onClick={() => setFiltroEstado("contactado")}>
+                  <FilterBtn
+                    active={filtroEstado === "contactado"}
+                    onClick={() => setFiltroEstado("contactado")}
+                  >
                     Contactados
                   </FilterBtn>
-                  <FilterBtn active={filtroEstado === "cerrado"} onClick={() => setFiltroEstado("cerrado")}>
+                  <FilterBtn
+                    active={filtroEstado === "cerrado"}
+                    onClick={() => setFiltroEstado("cerrado")}
+                  >
                     Cerrados
                   </FilterBtn>
 
                   <div className="ml-auto text-sm text-white/60">
-                    Total: <span className="text-white/85 font-semibold">{leadsFiltrados.length}</span>
+                    Total:{" "}
+                    <span className="text-white/85 font-semibold">
+                      {leadsFiltrados.length}
+                    </span>
                   </div>
                 </div>
 
@@ -352,7 +420,9 @@ export default function LeadsGestion() {
                     onChange={setFiltroCorreo}
                   />
                   <div>
-                    <label className="text-xs text-white/60 mb-1 block">Filtrar por fecha</label>
+                    <label className="text-xs text-white/60 mb-1 block">
+                      Filtrar por fecha
+                    </label>
                     <input
                       type="date"
                       value={filtroFecha}
@@ -372,7 +442,9 @@ export default function LeadsGestion() {
               <div className="p-6">
                 {leadsFiltrados.length === 0 ? (
                   <div className="rounded-2xl border border-white/10 bg-black/20 p-10 text-center">
-                    <p className="text-white/70">No hay leads para mostrar con este filtro.</p>
+                    <p className="text-white/70">
+                      No hay leads para mostrar con este filtro.
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -382,9 +454,13 @@ export default function LeadsGestion() {
                         estado: safeEstado(lead.estado),
                       };
 
-                      // ✅ SIN contenedor extra y SIN "Seleccionar"
                       return (
-                        <div key={lead.id ?? `${lead.telefono ?? "tel"}-${lead.nombre ?? "lead"}`}>
+                        <div
+                          key={
+                            lead.id ??
+                            `${lead.telefono ?? "tel"}-${lead.nombre ?? "lead"}`
+                          }
+                        >
                           <LeadCard lead={leadParaCard} />
                         </div>
                       );
@@ -493,7 +569,9 @@ export default function LeadsGestion() {
                   />
 
                   <div>
-                    <label className="text-sm text-white/70 mb-1 block">Estado</label>
+                    <label className="text-sm text-white/70 mb-1 block">
+                      Estado
+                    </label>
                     <select
                       className="
                         w-full rounded-2xl px-3 py-2.5
@@ -502,15 +580,26 @@ export default function LeadsGestion() {
                         focus:outline-none focus:ring-2 focus:ring-emerald-400/60
                       "
                       value={form.estado}
-                      onChange={(e) => setForm((f) => ({ ...f, estado: e.target.value as EstadoLead }))}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          estado: e.target.value as EstadoLead,
+                        }))
+                      }
                     >
                       <option value="Nuevo" className="bg-[#0B0D10] text-white">
                         Nuevo
                       </option>
-                      <option value="Contactado" className="bg-[#0B0D10] text-white">
+                      <option
+                        value="Contactado"
+                        className="bg-[#0B0D10] text-white"
+                      >
                         Contactado
                       </option>
-                      <option value="En Proceso" className="bg-[#0B0D10] text-white">
+                      <option
+                        value="En Proceso"
+                        className="bg-[#0B0D10] text-white"
+                      >
                         En Proceso
                       </option>
                       <option value="Cerrado" className="bg-[#0B0D10] text-white">
@@ -522,20 +611,26 @@ export default function LeadsGestion() {
                   <InputNumber
                     label="Meses de inversión"
                     value={form.meses_inversion}
-                    onChange={(v) => setForm((f) => ({ ...f, meses_inversion: v }))}
+                    onChange={(v) =>
+                      setForm((f) => ({ ...f, meses_inversion: v }))
+                    }
                     placeholder="0"
                   />
 
                   <InputNumber
                     label="Monto de inversión"
                     value={form.monto_inversion}
-                    onChange={(v) => setForm((f) => ({ ...f, monto_inversion: v }))}
+                    onChange={(v) =>
+                      setForm((f) => ({ ...f, monto_inversion: v }))
+                    }
                     placeholder="0"
                   />
                 </div>
 
                 <div className="flex items-center justify-between gap-3 mt-6">
-                  <p className="text-xs text-white/50">* Obligatorio: Nombre y Teléfono</p>
+                  <p className="text-xs text-white/50">
+                    * Obligatorio: Nombre y Teléfono
+                  </p>
 
                   <div className="flex gap-3">
                     <button

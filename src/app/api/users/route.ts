@@ -170,5 +170,5 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.log("❌ ERROR EN POST /api/users:", e);
     return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });
-  }
+  } 
 }

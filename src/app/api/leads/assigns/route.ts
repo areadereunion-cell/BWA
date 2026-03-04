@@ -13,7 +13,7 @@ export async function PUT(req: NextRequest) {
 
     // ✅ Solo admin/spa pueden asignar (ajústalo si quieres)
     const rol = String(user.rol ?? "").toLowerCase();
-    const canAssign = rol === "admin" || rol === "administrador" || rol === "spa";
+    const canAssign = rol === "admin" || rol === "administrador" || rol === "spa" || rol === "rrhh" || rol === "RRHH" || rol === "SpA";
     if (!canAssign) {
       return NextResponse.json({ ok: false, error: "Sin permisos" }, { status: 403 });
     }
